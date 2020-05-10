@@ -6,7 +6,7 @@
  * @ModifierEmail:
  * @ModifierDescription:
  * @Date: 2020-05-02 20:48:31
- * @LastEditTime: 2020-05-03 01:49:03
+ * @LastEditTime: 2020-05-10 19:00:58
  */
 // Vuex 集中式存储管理应⽤的所有组件的状态，并以相应的规则保证状态以可预测的⽅式发⽣变化
 
@@ -18,9 +18,11 @@ import Vue from 'vue'
 
 class Store {
   constructor(options) {
-    this.getters = {}
     this.actions = options.actions
     this.mutations = options.mutations
+    this.getters = {}
+    const computed = {}
+    this.computedGetters(options.getters, computed)
 
     // 借用 Vue 进行响应式 state，$$ 对 options.state 不进行响应式，保证外部 无法更改 state
     this._vm = new Vue({
@@ -28,7 +30,7 @@ class Store {
         $$state: options.state
       },
       // 将 getters 挂载 Vue 到 计算对象 上，实现 getters 响应式
-      computed: this.getComputedByGetters(options.getters)
+      computed: computed
     })
 
     // 绑定 this
@@ -41,22 +43,18 @@ class Store {
   }
 
   set state(val) {
-    throw new Error("please use action or mutation to change state")
+    throw new Error('please use action or mutation to change state')
   }
 
-  getComputedByGetters(getters) {
-    const computed = {}
-
-    for (let key in getters) {
+  computedGetters(getters, computed) {
+    Object.keys(getters).forEach(key => {
       computed[key] = () => getters[key](this.state, this.getters)
 
       Object.defineProperty(this.getters, key, {
         get: () => this._vm[key],
         enumerable: true
       })
-    }
-
-    return computed
+    })
   }
 
   // 实现commit根据⽤户传⼊type执⾏对应mutation
